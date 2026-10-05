@@ -108,7 +108,7 @@ function App() {
         fontFamily: 'sans-serif',
       }}
     >
-      <div style={{ maxWidth: '480px', margin: '0 auto' }}>
+      <div style={{ maxWidth: '480px', margin: '0 auto', textAlign: 'left' }}>
         {/* Offline banner */}
         {!isOnline && (
           <div
@@ -187,6 +187,7 @@ function App() {
             gap: '8px',
             flexWrap: 'wrap',
             marginBottom: '15px',
+            justifyContent: 'center',
           }}
         >
           {categories.map((cat) => (
@@ -210,25 +211,26 @@ function App() {
         </div>
 
         {/* Saved filter */}
-        <button
-          onClick={() => setShowSavedOnly(!showSavedOnly)}
-          style={{
-            padding: '8px 12px',
-            borderRadius: '20px',
-            border: 'none',
-            cursor: 'pointer',
-            backgroundColor: showSavedOnly ? '#f39c12' : '#e0e0e0',
-            color: showSavedOnly ? '#fff' : '#333',
-            fontSize: '0.85rem',
-            fontWeight: 'bold',
-            marginBottom: '20px',
-          }}
-        >
-          ⭐ Saved ({saved.length})
-        </button>
+        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+  <button
+    onClick={() => setShowSavedOnly(!showSavedOnly)}
+    style={{
+      padding: '8px 12px',
+      borderRadius: '20px',
+      border: 'none',
+      cursor: 'pointer',
+      backgroundColor: showSavedOnly ? '#f39c12' : '#e0e0e0',
+      color: showSavedOnly ? '#fff' : '#333',
+      fontSize: '0.85rem',
+      fontWeight: 'bold',
+    }}
+  >
+    ⭐ Saved ({saved.length})
+  </button>
+</div>
 
         {/* Results count */}
-        <h2 style={{ fontSize: '1rem', color: '#333', marginBottom: '15px' }}>
+        <h2 style={{ fontSize: '1rem', color: '#333', marginBottom: '15px', textAlign: 'center' }}>
           {filteredServices.length} service
           {filteredServices.length !== 1 ? 's' : ''} found
           {here ? ` — nearest to ${town}` : ''}

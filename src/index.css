@@ -4,9 +4,10 @@ body {
   margin: 0;
   padding: 0;
   background-color: #f4f4f9;
-  color-scheme: light;         /* ← forces light mode, overrides browser dark mode */
+  color-scheme: light;
   font-family: sans-serif;
   min-height: 100%;
+  text-align: center;   /* ← ADD THIS */
 }
 
 * {
