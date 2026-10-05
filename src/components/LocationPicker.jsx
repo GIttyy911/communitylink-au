@@ -2,7 +2,14 @@
 export default function LocationPicker({ towns, town, setTown }) {
   return (
     <div style={{ marginBottom: '15px' }}>
-      <label style={{ fontSize: '0.9rem', color: '#555', display: 'block', marginBottom: '6px' }}>
+      <label
+        style={{
+          fontSize: '0.9rem',
+          color: '#555',
+          display: 'block',
+          marginBottom: '6px',
+        }}
+      >
         📍 Where are you closest to?
       </label>
       <select
@@ -15,8 +22,8 @@ export default function LocationPicker({ towns, town, setTown }) {
           borderRadius: '8px',
           border: '1px solid #ccc',
           backgroundColor: '#fff',
-          color: '#333',           // ← ADD THIS
-          boxSizing: 'border-box'
+          color: '#333',
+          boxSizing: 'border-box',
         }}
       >
         <option value="" style={{ color: '#333', backgroundColor: '#fff' }}>
@@ -26,7 +33,7 @@ export default function LocationPicker({ towns, town, setTown }) {
           <option
             key={t}
             value={t}
-            style={{ color: '#333', backgroundColor: '#fff' }}  // ← ADD THIS
+            style={{ color: '#333', backgroundColor: '#fff' }}
           >
             {t}
           </option>

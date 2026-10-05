@@ -11,16 +11,47 @@ function App() {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('All');
   const [town, setTown] = useState(null);
+  const [showSavedOnly, setShowSavedOnly] = useState(false);
+  const [lastSynced, setLastSynced] = useState(null);
+  const [saved, setSaved] = useState(() => {
+    const stored = localStorage.getItem('saved');
+    return stored ? JSON.parse(stored) : [];
+  });
   const isOnline = useOnlineStatus();
 
+  // Fetch services on load
   useEffect(() => {
     async function fetchServices() {
       const { data, error } = await supabase.from('services').select('*');
-      if (error) console.error('Error fetching:', error);
-      else setServices(data);
+      if (error) {
+        console.error('Error fetching:', error);
+      } else {
+        setServices(data);
+        const now = new Date().toISOString();
+        setLastSynced(now);
+        localStorage.setItem('lastSynced', now);
+      }
     }
     fetchServices();
   }, []);
+
+  // Load last synced timestamp from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem('lastSynced');
+    if (stored) setLastSynced(stored);
+  }, []);
+
+  // Persist saved services to localStorage
+  useEffect(() => {
+    localStorage.setItem('saved', JSON.stringify(saved));
+  }, [saved]);
+
+  // Toggle save/unsave for a service
+  const toggleSave = (id) => {
+    setSaved((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
 
   // Unique towns for the location picker
   const towns = useMemo(() => {
@@ -33,7 +64,7 @@ function App() {
     return ['All', ...new Set(cats)];
   }, [services]);
 
-  // Calculate "here" coordinates based on selected town (average of its services)
+  // Average coordinates of the selected town (our "here" location)
   const here = useMemo(() => {
     if (!town || services.length === 0) return null;
     const pts = services.filter((s) => s.town === town);
@@ -43,18 +74,20 @@ function App() {
     return { lat, lon };
   }, [town, services]);
 
-  // Filter + sort services
+  // Filter + sort services by search, category, saved, and distance
   const filteredServices = useMemo(() => {
     let results = services.filter((service) => {
-      const matchesCategory = category === 'All' || service.category === category;
+      if (showSavedOnly && !saved.includes(service.id)) return false;
+      const matchesCategory =
+        category === 'All' || service.category === category;
       const term = search.toLowerCase();
       const matchesSearch =
         service.name.toLowerCase().includes(term) ||
+        service.town.toLowerCase().includes(term) ||
         service.notes.toLowerCase().includes(term);
       return matchesCategory && matchesSearch;
     });
 
-    // Sort by distance if location is set
     if (here) {
       results = [...results].sort(
         (a, b) =>
@@ -64,30 +97,74 @@ function App() {
     }
 
     return results;
-  }, [services, search, category, here]);
+  }, [services, search, category, here, showSavedOnly, saved]);
 
   return (
-    <div style={{ backgroundColor: '#f4f4f9', minHeight: '100vh', padding: '20px', fontFamily: 'sans-serif' }}>
+    <div
+      style={{
+        backgroundColor: '#f4f4f9',
+        minHeight: '100vh',
+        padding: '20px',
+        fontFamily: 'sans-serif',
+      }}
+    >
       <div style={{ maxWidth: '480px', margin: '0 auto' }}>
-
+        {/* Offline banner */}
         {!isOnline && (
-          <div style={{ backgroundColor: '#ffcc00', color: '#000', padding: '10px', textAlign: 'center', fontWeight: 'bold', marginBottom: '20px', borderRadius: '8px' }}>
+          <div
+            style={{
+              backgroundColor: '#ffcc00',
+              color: '#000',
+              padding: '10px',
+              textAlign: 'center',
+              fontWeight: 'bold',
+              marginBottom: '20px',
+              borderRadius: '8px',
+            }}
+          >
             📴 Offline Mode — Showing Cached Data
           </div>
         )}
 
+        {/* Header */}
         <header style={{ textAlign: 'center', marginBottom: '30px' }}>
-          <h1 style={{ color: '#1a4d2e', margin: '0 0 20px 0' }}>CommunityLink AU</h1>
-          <p style={{ margin: '0', color: '#666' }}>Offline community navigator</p>
+          <h1 style={{ color: '#1a4d2e', margin: '0 0 20px 0' }}>
+            CommunityLink AU
+          </h1>
+          <p style={{ margin: '0', color: '#666' }}>
+            Offline community navigator
+          </p>
         </header>
 
+        {/* Update button */}
+        <button
+          onClick={() => window.location.reload()}
+          style={{
+            width: '100%',
+            padding: '10px',
+            marginBottom: '15px',
+            backgroundColor: '#1a4d2e',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '8px',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            fontSize: '0.95rem',
+          }}
+        >
+          🔄 Update Directory
+        </button>
+
+        {/* Emergency panel */}
         <EmergencyPanel />
 
+        {/* Location picker */}
         <LocationPicker towns={towns} town={town} setTown={setTown} />
 
+        {/* Search bar */}
         <input
           type="text"
-          placeholder="Search by name or keyword..."
+          placeholder="Search by name, town, or service..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           style={{
@@ -97,11 +174,21 @@ function App() {
             borderRadius: '8px',
             border: '1px solid #ccc',
             marginBottom: '15px',
-            boxSizing: 'border-box'
+            boxSizing: 'border-box',
+            color: '#333',
+            backgroundColor: '#fff',
           }}
         />
 
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '20px' }}>
+        {/* Category filters */}
+        <div
+          style={{
+            display: 'flex',
+            gap: '8px',
+            flexWrap: 'wrap',
+            marginBottom: '15px',
+          }}
+        >
           {categories.map((cat) => (
             <button
               key={cat}
@@ -114,7 +201,7 @@ function App() {
                 backgroundColor: category === cat ? '#1a4d2e' : '#e0e0e0',
                 color: category === cat ? '#fff' : '#333',
                 fontSize: '0.85rem',
-                fontWeight: 'bold'
+                fontWeight: 'bold',
               }}
             >
               {cat}
@@ -122,28 +209,71 @@ function App() {
           ))}
         </div>
 
+        {/* Saved filter */}
+        <button
+          onClick={() => setShowSavedOnly(!showSavedOnly)}
+          style={{
+            padding: '8px 12px',
+            borderRadius: '20px',
+            border: 'none',
+            cursor: 'pointer',
+            backgroundColor: showSavedOnly ? '#f39c12' : '#e0e0e0',
+            color: showSavedOnly ? '#fff' : '#333',
+            fontSize: '0.85rem',
+            fontWeight: 'bold',
+            marginBottom: '20px',
+          }}
+        >
+          ⭐ Saved ({saved.length})
+        </button>
+
+        {/* Results count */}
         <h2 style={{ fontSize: '1rem', color: '#333', marginBottom: '15px' }}>
-          {filteredServices.length} service{filteredServices.length !== 1 ? 's' : ''} found
+          {filteredServices.length} service
+          {filteredServices.length !== 1 ? 's' : ''} found
           {here ? ` — nearest to ${town}` : ''}
         </h2>
 
+        {/* Service list */}
         <div>
           {filteredServices.map((service) => {
-            const d = here ? distanceKm(here.lat, here.lon, service.lat, service.lon) : null;
-            const dir = here ? direction(here.lat, here.lon, service.lat, service.lon) : null;
+            const d = here
+              ? distanceKm(here.lat, here.lon, service.lat, service.lon)
+              : null;
+            const dir = here
+              ? direction(here.lat, here.lon, service.lat, service.lon)
+              : null;
             return (
               <ServiceCard
                 key={service.id}
                 service={service}
                 distance={d}
                 direction={dir}
+                isSaved={saved.includes(service.id)}
+                onToggleSave={() => toggleSave(service.id)}
               />
             );
           })}
           {filteredServices.length === 0 && (
-            <p style={{ textAlign: 'center', color: '#888' }}>No services match your search.</p>
+            <p style={{ textAlign: 'center', color: '#888' }}>
+              No services match your search.
+            </p>
           )}
         </div>
+
+        {/* Last synced footer */}
+        {lastSynced && (
+          <p
+            style={{
+              textAlign: 'center',
+              fontSize: '0.75rem',
+              color: '#999',
+              marginTop: '20px',
+            }}
+          >
+            Last synced: {new Date(lastSynced).toLocaleString()}
+          </p>
+        )}
       </div>
     </div>
   );

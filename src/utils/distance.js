@@ -1,6 +1,6 @@
 // src/utils/distance.js
 
-// Haversine formula — calculates straight-line distance in km
+// Haversine formula — straight-line distance in km
 export function distanceKm(lat1, lon1, lat2, lon2) {
   const r = 6371;
   const p1 = (lat1 * Math.PI) / 180;
@@ -24,8 +24,14 @@ export function direction(lat1, lon1, lat2, lon2) {
       Math.cos(dl);
   const bearing = ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
   const dirs = [
-    'North', 'North-East', 'East', 'South-East',
-    'South', 'South-West', 'West', 'North-West',
+    'North',
+    'North-East',
+    'East',
+    'South-East',
+    'South',
+    'South-West',
+    'West',
+    'North-West',
   ];
   return dirs[Math.round(bearing / 45) % 8];
 }
